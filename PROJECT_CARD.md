@@ -79,8 +79,8 @@ Monitor teams and ops demos often need a **multi-feed CV console**, but producti
 | Resource | URL |
 |----------|-----|
 | **Repository** | [github.com/ovalles2019/sentinelcv](https://github.com/ovalles2019/sentinelcv) |
-| **Live app** | _Connect Render Blueprint — URL after first deploy_ |
-| **API docs** | `https://<service>.onrender.com/docs` |
+| **Live app** | [sentinelcv-api.onrender.com](https://sentinelcv-api.onrender.com) |
+| **API docs** | [sentinelcv-api.onrender.com/docs](https://sentinelcv-api.onrender.com/docs) |
 
 ---
 
