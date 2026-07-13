@@ -10,7 +10,7 @@ Built as a Python/FastAPI + Render interview demo (inspired by [sarreola07/overw
 |-------|------|
 | API | FastAPI, Pydantic, httpx, Pillow |
 | Realtime | Native WebSockets |
-| Detection | Mock (default) or Azure AI Vision |
+| Detection | Mock (default), Azure AI Vision, or **AWS Rekognition** |
 | Dashboard | Vanilla JS operator console |
 | Deploy | Render free web service (`render.yaml`) |
 | CI | GitHub Actions + pytest |
@@ -26,7 +26,26 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 Open http://localhost:8000 — dashboard, `/docs`, and `/health`.
 
-With no Azure key configured, `VISION_PROVIDER=auto` selects **mock** mode (real polling + feed health, fake detections).
+With no cloud keys configured, `VISION_PROVIDER=auto` selects **mock** mode (real polling + feed health, fake detections).
+
+### Real detections with AWS Rekognition
+
+1. In AWS IAM, create a user (or role) with `rekognition:DetectLabels`.
+2. Create an access key and set:
+
+```bash
+export VISION_PROVIDER=rekognition
+export AWS_REGION=us-east-1
+export AWS_ACCESS_KEY_ID=AKIAxxxxxxxx
+export AWS_SECRET_ACCESS_KEY=xxxxxxxx
+# optional tuning:
+# export AWS_REKOGNITION_MIN_CONFIDENCE=55
+# export AWS_REKOGNITION_MIN_GAP_SECONDS=1.0
+```
+
+3. Confirm `GET /api/mode` → `{"provider":"rekognition","mock":false}` and the dashboard badge shows **AWS REKOGNITION**.
+
+On Render, add the same env vars as **secrets** (never commit keys). Leave `VISION_PROVIDER=mock` on free demos if you do not want AWS spend.
 
 ### Real Azure detections (optional)
 
@@ -36,6 +55,7 @@ export AZURE_VISION_ENDPOINT=https://<resource>.cognitiveservices.azure.com
 export AZURE_VISION_KEY=<key>
 ```
 
+`VISION_PROVIDER=auto` picks Azure if an Azure key is set, else Rekognition if AWS keys are set, else mock.
 ## API
 
 | Surface | Purpose |

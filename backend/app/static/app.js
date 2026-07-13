@@ -320,7 +320,11 @@ async function init() {
   try {
     const mode = await fetchJson("/api/mode");
     const badge = document.getElementById("mode-badge");
-    const labels = { mock: "MOCK DETECTIONS", azure: "AZURE AI VISION" };
+    const labels = {
+      mock: "MOCK DETECTIONS",
+      azure: "AZURE AI VISION",
+      rekognition: "AWS REKOGNITION",
+    };
     badge.textContent = labels[mode.provider] ?? mode.provider.toUpperCase();
     badge.classList.add(mode.provider === "mock" ? "mock" : "live");
     logEvent(`pipeline online — ${labels[mode.provider] ?? mode.provider}`, "detection");

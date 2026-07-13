@@ -41,7 +41,7 @@ Monitor teams and ops demos often need a **multi-feed CV console**, but producti
 
 **Feed health model** — Up / Stale / Down with data-age always visible; one intentional dead feed for demos.
 
-**Pluggable detection** — `VisionClient` protocol; `VISION_PROVIDER=mock|azure|auto`.
+**Pluggable detection** — `VisionClient` protocol; `VISION_PROVIDER=mock|azure|rekognition|auto`.
 
 **Realtime-first UI** — WebSocket pushes with 30s safety poll / 5s fallback on disconnect.
 
@@ -55,7 +55,8 @@ Monitor teams and ops demos often need a **multi-feed CV console**, but producti
 
 | Category | Technologies |
 |----------|--------------|
-| **Backend** | Python 3.12, FastAPI, Uvicorn, httpx, Pillow |
+| **Backend** | Python 3.12, FastAPI, Uvicorn, httpx, Pillow, boto3 |
+| **Vision** | Mock · AWS Rekognition · Azure AI Vision |
 | **Realtime** | WebSockets |
 | **Cloud** | Render (free web service) |
 | **CI/CD** | GitHub Actions |

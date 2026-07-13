@@ -14,3 +14,8 @@ services:
         value: "15"
       - key: PYTHON_VERSION
         value: "3.12.8"
+      # For live Rekognition detections, set in the Dashboard (secrets):
+      # VISION_PROVIDER=rekognition
+      # AWS_REGION=us-east-1
+      # AWS_ACCESS_KEY_ID=...
+      # AWS_SECRET_ACCESS_KEY=...

@@ -10,7 +10,7 @@ Use this for phone screens, recruiter intros, and hiring-manager warm-ups.
 >
 > It polls public traffic-camera JPEG feeds, runs object detection through a pluggable backend, and pushes results to a live dashboard over WebSockets. Each feed degrades independently — Up, Stale, or Down — and operators can run a self-test from their phone camera.
 >
-> Architecturally it's FastAPI with an asyncio poller, an in-memory detection store, and either mock detections or Azure AI Vision. I deploy it on Render's free tier with mock mode so demos stay reliable, and GitHub Actions runs pytest on every push.
+> Architecturally it's FastAPI with an asyncio poller, an in-memory detection store, and pluggable vision backends — mock for free demos, or AWS Rekognition / Azure AI Vision for real boxes. I deploy it on Render with mock by default so demos stay reliable, and GitHub Actions runs pytest on every push.
 >
 > It's a prototype, but the production path is clear: persist history, add auth, and move heavy inference to a dedicated worker."
 

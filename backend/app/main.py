@@ -27,7 +27,9 @@ from app.config import Settings, get_settings
 from app.models import CameraConfig, FeedHealth
 from app.poller import CameraPoller
 from app.store import DetectionStore
-from app.vision import AzureVisionClient, MockVisionClient
+import os
+
+from app.vision import AzureVisionClient, AwsRekognitionClient, MockVisionClient
 from app.ws import ConnectionManager
 
 logging.basicConfig(level=logging.INFO)
@@ -43,13 +45,49 @@ def load_cameras(settings: Settings) -> list[CameraConfig]:
     return [CameraConfig(**c) for c in raw]
 
 
+def _has_aws_creds(settings: Settings) -> bool:
+    """True if explicit settings or standard AWS env vars look configured."""
+    if settings.aws_access_key_id.strip() and settings.aws_secret_access_key.strip():
+        return True
+    return bool(os.environ.get("AWS_ACCESS_KEY_ID") and os.environ.get("AWS_SECRET_ACCESS_KEY"))
+
+
+def _build_rekognition(settings: Settings) -> AwsRekognitionClient:
+    # Prefer explicit settings so Render env vars work without relying on boto defaults alone.
+    if settings.aws_access_key_id.strip() and settings.aws_secret_access_key.strip():
+        os.environ.setdefault("AWS_ACCESS_KEY_ID", settings.aws_access_key_id.strip())
+        os.environ.setdefault("AWS_SECRET_ACCESS_KEY", settings.aws_secret_access_key.strip())
+    if settings.aws_region.strip():
+        os.environ.setdefault("AWS_DEFAULT_REGION", settings.aws_region.strip())
+        os.environ.setdefault("AWS_REGION", settings.aws_region.strip())
+    return AwsRekognitionClient(
+        region=settings.aws_region or "us-east-1",
+        min_gap_seconds=settings.aws_rekognition_min_gap_seconds,
+        min_confidence=settings.aws_rekognition_min_confidence,
+    )
+
+
 def resolve_provider(settings: Settings) -> tuple[str, object]:
     provider = (settings.vision_provider or "auto").lower()
-    has_key = bool(settings.azure_vision_key.strip())
+    has_azure = bool(settings.azure_vision_key.strip())
+    has_aws = _has_aws_creds(settings)
+
     if provider == "auto":
-        provider = "azure" if has_key else "mock"
+        if has_azure:
+            provider = "azure"
+        elif has_aws:
+            provider = "rekognition"
+        else:
+            provider = "mock"
+
+    if provider in ("aws", "rekognition"):
+        if not has_aws:
+            logger.warning("Rekognition requested but AWS credentials missing — falling back to mock")
+            return "mock", MockVisionClient()
+        return "rekognition", _build_rekognition(settings)
+
     if provider == "azure":
-        if not has_key or not settings.azure_vision_endpoint.strip():
+        if not has_azure or not settings.azure_vision_endpoint.strip():
             logger.warning("Azure Vision requested but endpoint/key missing — falling back to mock")
             return "mock", MockVisionClient()
         client = AzureVisionClient(
@@ -59,6 +97,7 @@ def resolve_provider(settings: Settings) -> tuple[str, object]:
             http_timeout=settings.http_timeout_seconds,
         )
         return "azure", client
+
     return "mock", MockVisionClient()
 
 
