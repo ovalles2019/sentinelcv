@@ -421,6 +421,41 @@ main {
   font-family: var(--font-mono);
 }
 
+.cam-speeds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-left: 0.4rem;
+  margin-right: 0.4rem;
+  max-width: 55%;
+}
+.speed-pill {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+  padding: 0.18rem 0.4rem;
+  border: 1px solid var(--line);
+  background: var(--bg-deep);
+  color: var(--muted);
+  border-radius: var(--radius);
+  white-space: nowrap;
+}
+.speed-pill strong {
+  color: var(--ink);
+  font-weight: 600;
+  margin-left: 0.15rem;
+}
+.speed-pill .unit {
+  margin-left: 0.1rem;
+  opacity: 0.7;
+}
+.speed-pill.free { border-color: rgba(95, 224, 165, 0.45); color: var(--up); }
+.speed-pill.free strong { color: var(--up); }
+.speed-pill.moderate { border-color: rgba(224, 192, 106, 0.5); color: var(--stale); }
+.speed-pill.moderate strong { color: var(--stale); }
+.speed-pill.slow { border-color: rgba(240, 113, 120, 0.5); color: var(--down); }
+.speed-pill.slow strong { color: var(--down); }
+
 .frame-wrap { position: relative; aspect-ratio: 16 / 9; background: var(--bg-deep); }
 .frame-wrap::before, .frame-wrap::after {
   content: "";

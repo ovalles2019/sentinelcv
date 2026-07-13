@@ -1,4 +1,4 @@
-"""Domain models for feeds, detections, and health."""
+"""Domain models for feeds, detections, health, and TxDOT speed links."""
 
 from datetime import datetime
 from enum import Enum
@@ -12,11 +12,20 @@ class FeedHealth(str, Enum):
     DOWN = "Down"
 
 
+class SpeedLinkConfig(BaseModel):
+    """Maps a camera to a TxDOT travel-time (TVT) corridor segment."""
+
+    id: str  # e.g. US-75.NB.MainStToIH-635
+    label: str
+
+
 class CameraConfig(BaseModel):
     id: str
     name: str
     image_url: str
     fallback_url: str | None = None
+    speed_district: str | None = None  # e.g. DAL
+    speed_links: list[SpeedLinkConfig] = Field(default_factory=list)
 
 
 class Detection(BaseModel):
@@ -27,6 +36,18 @@ class Detection(BaseModel):
     y: float
     w: float
     h: float
+
+
+class SpeedReading(BaseModel):
+    link_id: str = Field(serialization_alias="linkId")
+    label: str
+    avg_mph: float = Field(serialization_alias="avgMph")
+    travel_time_minutes: float | None = Field(default=None, serialization_alias="travelTimeMinutes")
+    description: str | None = None
+    updated_at: datetime | None = Field(default=None, serialization_alias="updatedAt")
+    level: str = "unknown"  # free | moderate | slow | unknown
+
+    model_config = {"populate_by_name": True}
 
 
 class FrameResult(BaseModel):
@@ -44,5 +65,16 @@ class CameraStatus(BaseModel):
     health: FeedHealth
     last_success: datetime | None = Field(default=None, serialization_alias="lastSuccess")
     last_error: str | None = Field(default=None, serialization_alias="lastError")
+    speeds: list[SpeedReading] = Field(default_factory=list)
 
     model_config = {"populate_by_name": True}
+
+
+def congestion_level(avg_mph: float | None) -> str:
+    if avg_mph is None:
+        return "unknown"
+    if avg_mph >= 55:
+        return "free"
+    if avg_mph >= 35:
+        return "moderate"
+    return "slow"

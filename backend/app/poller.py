@@ -13,6 +13,7 @@ from PIL import Image
 
 from app.models import CameraConfig, FrameResult
 from app.store import DetectionStore
+from app.txdot_speed import fetch_tvt_index, readings_for_links
 from app.vision.base import VisionClient
 from app.ws import ConnectionManager
 
@@ -48,6 +49,7 @@ class CameraPoller:
         self._hub = hub
         self._interval = poll_interval
         self._timeout = http_timeout
+        self._speed_interval = max(poll_interval, 30.0)
         self._tasks: list[asyncio.Task] = []
 
     def start(self) -> None:
@@ -55,6 +57,8 @@ class CameraPoller:
         for i, cam in enumerate(self._cameras):
             offset = self._interval * i / n
             self._tasks.append(asyncio.create_task(self._run_loop(cam, offset)))
+        if any(c.speed_links for c in self._cameras):
+            self._tasks.append(asyncio.create_task(self._run_speed_loop()))
         logger.info(
             "Polling %s cameras every %ss (staggered)",
             len(self._cameras),
@@ -117,6 +121,42 @@ class CameraPoller:
                 "feedFault",
                 {"cameraId": cam.id, "error": str(exc)},
             )
+
+    async def _run_speed_loop(self) -> None:
+        """Refresh TxDOT TVT corridor speeds for cameras that declare speed_links."""
+        try:
+            while True:
+                await self._refresh_speeds()
+                await asyncio.sleep(self._speed_interval)
+        except asyncio.CancelledError:
+            return
+
+    async def _refresh_speeds(self) -> None:
+        by_district: dict[str, list[CameraConfig]] = {}
+        for cam in self._cameras:
+            if not cam.speed_links:
+                continue
+            district = (cam.speed_district or "DAL").upper()
+            by_district.setdefault(district, []).append(cam)
+
+        for district, cams in by_district.items():
+            try:
+                index = await fetch_tvt_index(district, timeout=max(self._timeout, 25.0))
+            except Exception as exc:
+                logger.warning("TxDOT TVT fetch failed for %s: %s", district, exc)
+                continue
+            for cam in cams:
+                readings = readings_for_links(index, cam.speed_links)
+                self._store.record_speeds(cam.id, readings)
+                if readings:
+                    summary = ", ".join(
+                        f"{r.label} {r.avg_mph:.0f} mph" for r in readings if r.level != "unknown"
+                    )
+                    if summary:
+                        await self._hub.broadcast(
+                            "speeds",
+                            {"cameraId": cam.id, "speeds": [r.model_dump(by_alias=True, mode="json") for r in readings]},
+                        )
 
     async def _fetch(self, url: str) -> bytes:
         if url.startswith("txdot://"):

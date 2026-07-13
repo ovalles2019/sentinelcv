@@ -33,6 +33,7 @@ function getCard(cam) {
     root: node,
     dot: node.querySelector(".health-dot"),
     age: node.querySelector(".cam-age"),
+    speeds: node.querySelector(".cam-speeds"),
     img: node.querySelector(".frame"),
     overlay: node.querySelector(".overlay"),
     acquiring: node.querySelector(".acquiring"),
@@ -41,6 +42,22 @@ function getCard(cam) {
   };
   cards.set(cam.id, refs);
   return refs;
+}
+
+function renderSpeeds(card, speeds) {
+  if (!card.speeds) return;
+  if (!speeds || !speeds.length) {
+    card.speeds.hidden = true;
+    card.speeds.innerHTML = "";
+    return;
+  }
+  card.speeds.hidden = false;
+  card.speeds.innerHTML = speeds.map(s => {
+    const mph = Number.isFinite(s.avgMph) ? Math.round(s.avgMph) : "–";
+    const level = s.level || "unknown";
+    const title = s.description ? `${s.label}: ${s.description}` : s.label;
+    return `<span class="speed-pill ${level}" title="${title}">${s.label} <strong>${mph}</strong><span class="unit">mph</span></span>`;
+  }).join("");
 }
 
 function drawBoxes(overlay, detections) {
@@ -82,10 +99,12 @@ async function updateCamera(cam) {
   card.dot.className = "health-dot " + cam.health.toLowerCase();
   card.age.textContent = ageString(cam.lastSuccess);
   card.noSignal.classList.toggle("hidden", cam.health !== "Down");
+  renderSpeeds(card, cam.speeds);
   trackHealthChange(cam);
 
   if (cam.health === "Down") {
     card.detections.textContent = cam.lastError ?? "feed unreachable";
+    // Still show last speeds if TxDOT TVT is up while JPEG is down
     return;
   }
   if (lastFetched.get(cam.id) === cam.lastSuccess) return;
@@ -269,7 +288,7 @@ function initRealtime() {
     ws.addEventListener("message", (ev) => {
       try {
         const msg = JSON.parse(ev.data);
-        if (msg.event === "frame" || msg.event === "feedFault") {
+        if (msg.event === "frame" || msg.event === "feedFault" || msg.event === "speeds") {
           queueRefresh();
         } else if (msg.event === "liveDetections") {
           const m = msg.payload;

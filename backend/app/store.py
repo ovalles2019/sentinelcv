@@ -6,7 +6,7 @@ from collections import deque
 from datetime import datetime, timedelta, timezone
 from threading import Lock
 
-from app.models import CameraConfig, CameraStatus, Detection, FeedHealth, FrameResult
+from app.models import CameraConfig, CameraStatus, Detection, FeedHealth, FrameResult, SpeedReading
 
 HISTORY_WINDOW = timedelta(minutes=30)
 STALE_THRESHOLD = timedelta(minutes=2)
@@ -16,6 +16,7 @@ class DetectionStore:
     def __init__(self) -> None:
         self._latest: dict[str, FrameResult] = {}
         self._status: dict[str, CameraStatus] = {}
+        self._speeds: dict[str, list[SpeedReading]] = {}
         self._history: deque[tuple[datetime, str, str]] = deque()
         self._lock = Lock()
 
@@ -30,6 +31,7 @@ class DetectionStore:
                         health=FeedHealth.DOWN,
                         last_success=None,
                         last_error="awaiting first poll",
+                        speeds=[],
                     )
 
     def record_success(self, cam: CameraConfig, frame: FrameResult) -> None:
@@ -41,6 +43,7 @@ class DetectionStore:
                 health=FeedHealth.UP,
                 last_success=frame.captured_at,
                 last_error=None,
+                speeds=list(self._speeds.get(cam.id, [])),
             )
             for d in frame.detections:
                 self._history.append((frame.captured_at, cam.id, d.label))
@@ -62,7 +65,15 @@ class DetectionStore:
                 health=health,
                 last_success=last_success,
                 last_error=error,
+                speeds=list(self._speeds.get(cam.id, [])),
             )
+
+    def record_speeds(self, camera_id: str, readings: list[SpeedReading]) -> None:
+        with self._lock:
+            self._speeds[camera_id] = list(readings)
+            prev = self._status.get(camera_id)
+            if prev:
+                self._status[camera_id] = prev.model_copy(update={"speeds": list(readings)})
 
     def record_live_detections(self, device_id: str, detections: list[Detection]) -> None:
         with self._lock:

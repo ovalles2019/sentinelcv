@@ -76,11 +76,17 @@ Edit `backend/app/data/cameras.json`, then push to GitHub (Render auto-deploys).
 {
   "id": "cam-4",
   "name": "Dallas TxDOT — US 75 @ IH-635 North",
-  "image_url": "txdot://DAL/US75 @ IH635 North"
+  "image_url": "txdot://DAL/US75 @ IH635 North",
+  "speed_district": "DAL",
+  "speed_links": [
+    { "id": "US-75.NB.MainStToIH-635", "label": "US-75 NB" },
+    { "id": "IH-635.EB.LunaToUS-75", "label": "IH-635 EB" }
+  ]
 }
 ```
 
-Format: `txdot://{districtCode}/{icd_Id}` — browse names on [TxDOT ITS Dallas cameras](https://its.txdot.gov/its/District/DAL/cameras). Other useful DAL ids: `US75 @ Midpark`, `IH635 @ Coit`, `IH635 @ Park Central`, `High Five N.E. 1`.
+Format: `txdot://{districtCode}/{icd_Id}` — browse camera names on [TxDOT ITS Dallas](https://its.txdot.gov/its/District/DAL/cameras).  
+`speed_links` pull corridor **average mph** from TxDOT travel-time (TVT) data — not vehicle speed estimated from pixels.
 
 ## API
 
