@@ -119,7 +119,59 @@ class CameraPoller:
             )
 
     async def _fetch(self, url: str) -> bytes:
+        if url.startswith("txdot://"):
+            return await self._fetch_txdot(url)
         async with httpx.AsyncClient(timeout=self._timeout, follow_redirects=True) as client:
             res = await client.get(url)
             res.raise_for_status()
             return res.content
+
+    async def _fetch_txdot(self, url: str) -> bytes:
+        """Fetch a TxDOT ITS still via GetCctvSnapshotByIcdId.
+
+        URL shape: txdot://{districtCode}/{icd_Id}
+        Example:   txdot://DAL/US75 @ IH635 North
+        """
+        district, icd_id = parse_txdot_url(url)
+        params = {"icdId": icd_id, "districtCode": district}
+        endpoint = "https://its.txdot.gov/its/DistrictIts/GetCctvSnapshotByIcdId"
+        headers = {
+            "Accept": "application/json",
+            "Referer": f"https://its.txdot.gov/its/District/{district}/cameras",
+            "User-Agent": "SentinelCV/0.1 (+https://github.com/ovalles2019/sentinelcv)",
+        }
+        timeout = max(self._timeout, 25.0)
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
+            res = await client.get(endpoint, params=params, headers=headers)
+            res.raise_for_status()
+            data = res.json()
+        if isinstance(data, list):
+            data = data[0] if data else {}
+        snippet = (data or {}).get("snippet") if isinstance(data, dict) else None
+        if not snippet:
+            raise RuntimeError(f"TxDOT returned no snapshot for {district}/{icd_id}")
+        return decode_txdot_snippet(snippet)
+
+
+def parse_txdot_url(url: str) -> tuple[str, str]:
+    """txdot://DAL/US75 @ IH635 North -> ('DAL', 'US75 @ IH635 North')."""
+    if not url.startswith("txdot://"):
+        raise ValueError(f"not a txdot URL: {url}")
+    rest = url[len("txdot://") :]
+    district, sep, icd = rest.partition("/")
+    if not sep or not district or not icd:
+        raise ValueError(
+            "txdot URL must be txdot://{districtCode}/{icd_Id} "
+            "(e.g. txdot://DAL/US75 @ IH635 North)"
+        )
+    return district.strip(), icd.strip()
+
+
+def decode_txdot_snippet(snippet: str) -> bytes:
+    """Decode TxDOT base64 JPEG snippet (optionally data:-prefixed)."""
+    payload = snippet.split(",", 1)[-1] if snippet.startswith("data:") else snippet
+    payload = payload.replace("\\/", "/")
+    try:
+        return base64.b64decode(payload, validate=False)
+    except Exception as exc:
+        raise RuntimeError(f"invalid TxDOT snapshot encoding: {exc}") from exc

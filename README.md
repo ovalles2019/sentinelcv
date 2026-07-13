@@ -56,6 +56,32 @@ export AZURE_VISION_KEY=<key>
 ```
 
 `VISION_PROVIDER=auto` picks Azure if an Azure key is set, else Rekognition if AWS keys are set, else mock.
+### Add more cameras
+
+Edit `backend/app/data/cameras.json`, then push to GitHub (Render auto-deploys).
+
+**Direct JPEG feeds** (NYC DOT style):
+
+```json
+{
+  "id": "cam-5",
+  "name": "My camera",
+  "image_url": "https://example.com/camera.jpg"
+}
+```
+
+**TxDOT Dallas / statewide ITS** (LBJ 635, US 75, etc.) use a special URL because TxDOT does not expose plain image links:
+
+```json
+{
+  "id": "cam-4",
+  "name": "Dallas TxDOT — US 75 @ IH-635 North",
+  "image_url": "txdot://DAL/US75 @ IH635 North"
+}
+```
+
+Format: `txdot://{districtCode}/{icd_Id}` — browse names on [TxDOT ITS Dallas cameras](https://its.txdot.gov/its/District/DAL/cameras). Other useful DAL ids: `US75 @ Midpark`, `IH635 @ Coit`, `IH635 @ Park Central`, `High Five N.E. 1`.
+
 ## API
 
 | Surface | Purpose |

@@ -10,6 +10,11 @@
     "image_url": "https://webcams.nyctmc.org/api/cameras/1927b469-e2dc-4943-a70c-e6e52fd4c48c/image"
   },
   {
+    "id": "cam-4",
+    "name": "Dallas TxDOT — US 75 @ IH-635 North (High Five)",
+    "image_url": "txdot://DAL/US75 @ IH635 North"
+  },
+  {
     "id": "cam-3",
     "name": "Severed link drill — intentionally dead",
     "image_url": "https://invalid.example.com/cam.jpg"
