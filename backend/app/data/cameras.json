@@ -1,0 +1,17 @@
+[
+  {
+    "id": "cam-1",
+    "name": "NYC DOT — Queensboro Bridge @ Crescent St",
+    "image_url": "https://webcams.nyctmc.org/api/cameras/1b3248f9-f26e-4f36-943f-b7a7731595fb/image"
+  },
+  {
+    "id": "cam-2",
+    "name": "NYC DOT — Times Square, Broadway @ 46 St",
+    "image_url": "https://webcams.nyctmc.org/api/cameras/1927b469-e2dc-4943-a70c-e6e52fd4c48c/image"
+  },
+  {
+    "id": "cam-3",
+    "name": "Severed link drill — intentionally dead",
+    "image_url": "https://invalid.example.com/cam.jpg"
+  }
+]
